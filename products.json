@@ -1,0 +1,24 @@
+[
+  {
+    "id": 1,
+    "name": "Calendula Face Cream",
+    "category": "face care",
+    "skin_type": ["dry", "sensitive"],
+    "benefits": ["hydration", "soothing"],
+    "price": 29.90,
+    "currency": "GEL",
+    "in_stock": true,
+    "description": "დამატენიანებელი და დამამშვიდებელი კრემი მგრძნობიარე კანისთვის"
+  },
+  {
+    "id": 2,
+    "name": "Aqua Hydrating Serum",
+    "category": "serum",
+    "skin_type": ["dry", "normal"],
+    "benefits": ["hydration", "glow"],
+    "price": 34.90,
+    "currency": "GEL",
+    "in_stock": true,
+    "description": "ღრმად დამატენიანებელი სერუმი"
+  }
+]

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Farmasi Voice Assistant</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 60px;
+      background: #ffffff;
+      color: #444;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #555;
+    }
+
+    button {
+      padding: 14px 24px;
+      font-size: 18px;
+      cursor: pointer;
+      border: 1px solid #bbb;
+      background: #fff;
+      border-radius: 6px;
+    }
+
+    #output {
+      margin-top: 24px;
+      font-size: 20px;
+      color: #666;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.6;
+      padding: 0 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎤 Farmasi Voice Assistant</h1>
+
+  <button onclick="startListening()">🎤 საუბარი</button>
+
+  <p id="output">პასუხი: აქ გამოჩნდება</p>
+
+  <script>
+    function speak(text) {
+      const cleaned = String(text || "")
+        .replace(/\n/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (!cleaned) return;
+
+      const synth = window.speechSynthesis;
+      synth.cancel();
+      synth.resume();
+
+      const utterance = new SpeechSynthesisUtterance(cleaned);
+      const voices = synth.getVoices();
+
+      let selectedVoice =
+        voices.find(v => v.lang && v.lang.toLowerCase().includes("en")) ||
+        voices[0];
+
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+        utterance.lang = selectedVoice.lang;
+        console.log("არჩეული ხმა:", selectedVoice.name, selectedVoice.lang);
+      } else {
+        utterance.lang = "en-US";
+      }
+
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+
+      utterance.onstart = () => console.log("ხმა დაიწყო");
+      utterance.onend = () => console.log("ხმა დასრულდა");
+      utterance.onerror = (e) => console.error("Speech synthesis error:", e);
+
+      setTimeout(() => {
+        synth.speak(utterance);
+      }, 200);
+    }
+
+    window.speechSynthesis.onvoiceschanged = () => {
+      console.log("ხელმისაწვდომი ხმები:", window.speechSynthesis.getVoices());
+    };
+
+    async function askServer(message) {
+      try {
+        const res = await fetch("/api/ask", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ message })
+        });
+
+        const text = await res.text();
+
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          console.error("არ არის JSON:", text);
+          return "სერვერმა არ დააბრუნა სწორი პასუხი";
+        }
+
+        if (!res.ok) {
+          return data.reply || "დაფიქსირდა შეცდომა";
+        }
+
+        return data.reply || "ვერ ვუპასუხე";
+      } catch (err) {
+        console.error("Fetch error:", err);
+        return "სერვერთან კავშირი ვერ დამყარდა";
+      }
+    }
+
+    function startListening() {
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+
+      const output = document.getElementById("output");
+
+      if (!SpeechRecognition) {
+        output.innerText = "ამ ბრაუზერს ხმოვანი ამოცნობა არ აქვს მხარდაჭერილი.";
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = "ka-GE";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      recognition.continuous = false;
+
+      output.innerText = "გისმენთ...";
+
+      recognition.onresult = async function (event) {
+        const transcript = event.results[0][0].transcript;
+        console.log("თქვენ თქვით:", transcript);
+
+        output.innerText = "თქვენ თქვით: " + transcript;
+
+        const reply = await askServer(transcript);
+        console.log("Server reply:", reply);
+
+        output.innerText = "პასუხი: " + reply;
+        speak(reply);
+      };
+
+      recognition.onerror = function (event) {
+        console.error("Speech recognition error:", event.error);
+        output.innerText = "შეცდომა: " + event.error;
+      };
+
+      recognition.onend = function () {
+        console.log("Speech recognition დასრულდა");
+      };
+
+      recognition.start();
+    }
+  </script>
+</body>
+</html>
